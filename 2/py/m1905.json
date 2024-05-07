@@ -1,0 +1,210 @@
+#编码=utf-8
+#!/usr/bin/python
+导入系统
+sys.path.append('..')
+从base.spider导入Spider
+进口再
+导入数学
+导入 json
+导入时间
+导入哈希库
+导入uuid
+
+class Spider(Spider):  # 元类 默认的元类 type
+    def getName(自身):
+        return "1905电影网"
+    def init（自我，扩展=“”）：
+        经过
+    def isVideoFormat(self,url):
+        经过
+    def 手动视频检查（自身）：
+        经过
+    def homeContent(自我,过滤器):
+        结果={}
+        类别手册 = {
+            "电影": "n_1/o3p",
+            "微电影":"n_1_c_922/o3p",
+            "系列电影":"n_2/o3p",
+            "记录片":"c_927/o3p",
+            "晚会":"n_1_c_586/o3p",
+            "独家":"n_1_c_178/o3p",
+            "综艺":"n_1_c_1024/o3p",
+            "体育":"n_1_c_1053/o3p"
+        }
+        类=[]
+        对于 cateManual 中的 k：
+            类.append({
+                '类型名称':k,
+                'type_id':cateManual[k]
+            })
+        结果['类'] = 类
+        返回结果
+    def homeVideoContent（自身）：
+        结果={}
+        url = 'https://www.1905.com/vod/cctv6/lst/'
+        标题= {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, 如 Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.43',
+            '推荐人': 'https://www.1905.com/vod/list/n_1/o3p1.html',
+            '接受': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q =0.7'
+        }
+        rsp = self.fetch(url, headers=headers)
+        html = self.html(rsp.text)
+        aList = html.xpath("//div[@class='grid-2x']/a")
+        视频 = []
+        对于aList中的a：
+            援助 = a.xpath("./@href")[0] #https://www.1905.com/vod/play/85646.shtml
+            if str(aid) 中的'//vip.1905.com':
+                continue #跳过VIP视频
+            help = self.regStr(reg=r'play/(.*?).sh', src=aid) # 85646
+            img = a.xpath('./img/@src')[0]
+            标题 = a.xpath('./img/@alt')[0]
+            视频.append({
+            “vod_id”：援助，
+            “vod_name”：标题，
+            “vod_pic”：img，
+            “vod_remarks”：''
+            })
+        结果['列表'] = 视频
+        返回结果
+    defcategoryContent(self,tid,pg,filter,extend):
+        结果={}
+        url = 'https://www.1905.com/vod/list/{}{}.html'.format(tid, pg)
+        标题= {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, 如 Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.43',
+            '推荐人': 'https://www.1905.com/vod/list/n_1/o3p1.html',
+            '接受': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q =0.7'
+        }
+        rsp = self.fetch(url, headers=headers)
+        html = self.html(rsp.text)
+        aList = html.xpath("//section[contains(@class,'search-list')]/div/a" if tid != u'n_2/o3p' else "//div[@class='mod' ]/div[1]/a")
+        视频 = []
+        限制 = len(aList)
+        对于aList中的a：
+            援助 = a.xpath("./@href")[0] # https://www.1905.com/vod/play/85646.shtml
+            help = self.regStr(reg=r'play/(.*?).sh', src=aid) # 85646
+            img = a.xpath('./img/@src')[0]
+            标题 = a.xpath('./@title')[0]
+            视频.append({
+                “vod_id”：援助，
+                “vod_name”：标题，
+                “vod_pic”：img，
+                “vod_remarks”：''
+        })
+        结果['列表'] = 视频
+        结果['页'] = pg
+        结果['页数'] = 100
+        结果['限制'] = 限制
+        结果['总计'] = 100 * 限制
+        返回结果
+    def 详细内容（自身，数组）：
+        援助=数组[0]
+        url = "https://www.1905.com/api/content/?callback=&m=Vod&a=getVodSidebar&id={0}&fomat=json".format(aid)
+        rsp = self.fetch(url)
+        root = json.loads(rsp.text)
+        标题 = 根['标题']
+        pic = 根['拇指']
+        备注 = root['推荐原因']
+        内容 = 根['描述']
+        演员 = root['主演']
+        直接 = 根['直接']
+        点播={
+            “vod_id”：援助，
+            “vod_name”：标题，
+            “vod_pic”：图片，
+            “类型名称”：“”，
+            "vod_year": "",
+            "vod_area": "",
+            “vod_remarks”：备注，
+            “vod_actor”：演员，
+            “vod_director”：直接，
+            “vod_content”：内容
+                }
+        行项目 = []
+        vodItems.append(标题 + "$" + 帮助)
+        #处理多集的电影
+        系列 = root['info']['series_data']
+        对于系列中的序列：
+            vodItems.append(ser['title'] + "$" + ser['contentid'])
+        播放列表 = []
+        joinStr = '#'.join(vodItems)
+        playList.append(joinStr)
+        vod['vod_play_from'] = '默认最高画质'
+        点播['vod_play_url'] = '$$$'.join(playList)
+        结果={
+            '列表'： [
+                视频点播
+            ]
+        }
+        返回结果
+    def searchContent(self,key,quick):
+        结果={}
+        url = 'https://www.1905.com/search/index-p-type-all-q-{}.html'.format(key)
+        标题= {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, 如 Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.43',
+            '推荐人': 'https://www.1905.com/vod/list/n_1/o3p1.html',
+            '接受': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q =0.7'
+        }
+        rsp = self.fetch(url, headers=headers)
+        html = self.html(rsp.text)
+        aList = html.xpath("//div[contains(@class,'movie_box')]/div/div")
+        视频 = []
+        对于aList中的a：
+            help = a.xpath("./div/ul/li[contains(@class,'paly-tab-icon')]/a/@href")[0] #https://www.1905.com/点播/播放/85646.shtml
+            如果 len(援助) == 0:
+                继续
+            help = self.regStr(reg=r'play/(.*?).sh', src=aid) # 85646
+            img = a.xpath('./div/div/a/img/@src')[0]
+            标题 = a.xpath('./div/a/img/@alt')[0]
+            视频.append({
+                “vod_id”：援助，
+                “vod_name”：标题，
+                “vod_pic”：img，
+                “vod_remarks”：''
+            })
+        结果['列表'] = 视频
+        返回结果
+    def playerContent(自我,标志,id,vipFlags):
+        结果={}
+        随机数 = int(round(time.time() * 1000))
+        过期时间 = 随机数 + 600
+        uid = str(uuid.uuid4())
+        playerid = uid.replace("-", "")[5:20]
+        签名 = 'cid={0}&expiretime={1}&nonce={2}&page=https%3A%2F%2Fwww.1905.com%2Fvod%2Fplay%2F{3}.shtml&playerid={4}&type=hls&uuid= {5}.dde3d61a0411511d'.format(id,expiretime,nonce,id,playerid,uid)
+        签名 = hashlib.sha1(signature.encode()).hexdigest()
+        url = 'https://profile.m1905.com/mvod/getVideoinfo.php?nonce={0}&expiretime={1}&cid={2}&uuid={3}&playerid={4}&page=https%3A% 2F%2Fwww.1905.com%2Fvod%2Fplay%2F{5}.shtml&type=hls&signature={6}&callback='.format(nonce,expiretime,id,uid,playerid,id,signature)
+        标题= {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, 如 Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.43',
+            '推荐人': 'https://www.1905.com/vod/list/n_1/o3p1.html',
+            '接受': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q =0.7'
+        }
+        rsp = self.fetch(url,headers=headers)
+        jo = json.loads(rsp.text.replace("(", "").replace(")", ""))
+        数据 = jo['数据']['符号']
+        符号=''
+        质量Str = ''
+        如果 data.keys() 中为“uhd”：
+            符号=数据['uhd']['符号']
+            质量Str = 'uhd'
+        data.keys() 中的 elif 'hd'：
+            符号 = 数据['hd']['符号']
+            质量Str = '高清'
+        data.keys() 中的 elif 'sd'：
+            符号 = 数据['sd']['符号']
+            质量Str = 'sd'
+        主机 = jo['数据']['质量'][qualityStr]['主机']
+        路径 = jo['数据']['路径'][qualityStr]['路径']
+        playUrl = 主机 + 标志 + 路径
+        结果[“解析”] = 0
+        结果[“播放地址”] = ''
+        结果[“url”] = 播放网址
+        结果[“标题”] = ''
+        返回结果
+
+    配置={
+        “玩家”：{}，
+        “筛选”： {}
+    }
+    标头={}
+
+    def localProxy(自身,参数):
+        返回 [200，“视频/MP2T”，操作，“”]
